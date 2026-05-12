@@ -77,22 +77,23 @@ elib_pid_inc_err_t elib_pid_inc_compute(elib_pid_inc_ctx_t *ctx,
     /* Dead zone */
     error = elib_pid_util_dead_zone(error, p->dead_zone);
 
-    /* Incremental terms */
-    elib_pid_val_t delta_p = p->kp * (error - ctx->prev_error);
-    elib_pid_val_t delta_i = (p->ki != (elib_pid_val_t)0) ? p->ki * error * p->dt : (elib_pid_val_t)0;
-
-    elib_pid_val_t delta_d = (elib_pid_val_t)0;
+    /* Incremental terms (only compute non-zero) */
+    elib_pid_val_t delta_u = (elib_pid_val_t)0;
+    if (p->kp != (elib_pid_val_t)0) {
+        delta_u += p->kp * (error - ctx->prev_error);
+    }
+    if (p->ki != (elib_pid_val_t)0) {
+        delta_u += p->ki * error * p->dt;
+    }
     if (p->kd != (elib_pid_val_t)0) {
         elib_pid_val_t d_raw = (error - (elib_pid_val_t)2 * ctx->prev_error + ctx->prev2_error) / p->dt;
         elib_pid_val_t d = d_raw;
         if (p->d_filter_fn != NULL) {
             d = p->d_filter_fn(d_raw, p->dt, p->d_filter_ctx);
         }
-        delta_d = p->kd * d;
+        delta_u += p->kd * d;
     }
 
-    /* Incremental output */
-    elib_pid_val_t delta_u = delta_p + delta_i + delta_d;
     elib_pid_val_t out = ctx->prev_output + delta_u;
 
     /* Output clamping */

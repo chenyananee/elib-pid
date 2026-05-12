@@ -119,19 +119,26 @@ elib_pid_pos_err_t elib_pid_pos_compute(elib_pid_pos_ctx_t *ctx,
         }
     }
 
-    /* PID output (skip ki*integral when ki == 0) */
-    elib_pid_val_t out = p->kp * error + p->kd * d;
+    /* PID output — only compute non-zero terms */
+    elib_pid_val_t out = (elib_pid_val_t)0;
+    if (p->kp != (elib_pid_val_t)0) {
+        out += p->kp * error;
+    }
+    if (p->kd != (elib_pid_val_t)0) {
+        out += p->kd * d;
+    }
     if (p->ki != (elib_pid_val_t)0) {
-        out += p->ki * ctx->integral;
+        elib_pid_val_t with_integral = out + p->ki * ctx->integral;
 
-        /* Anti-windup: conditional integration (only meaningful when ki != 0) */
+        /* Anti-windup: conditional integration */
         if (ctx->anti_windup_mode & ELIB_PID_POS_ANTI_WINDUP_CONDITION) {
-            elib_pid_val_t out_clamped = elib_pid_util_clamp(out, p->out_min, p->out_max);
-            if (out != out_clamped) {
+            elib_pid_val_t clamped = elib_pid_util_clamp(with_integral, p->out_min, p->out_max);
+            if (with_integral != clamped) {
                 ctx->integral = integral_prev;
-                out = out_clamped;
+                with_integral = clamped;
             }
         }
+        out = with_integral;
     }
 
     /* Output clamping */
