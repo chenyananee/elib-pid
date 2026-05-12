@@ -81,12 +81,15 @@ elib_pid_inc_err_t elib_pid_inc_compute(elib_pid_inc_ctx_t *ctx,
     elib_pid_val_t delta_p = p->kp * (error - ctx->prev_error);
     elib_pid_val_t delta_i = p->ki * error * p->dt;
 
-    elib_pid_val_t d_raw = (error - (elib_pid_val_t)2 * ctx->prev_error + ctx->prev2_error) / p->dt;
-    elib_pid_val_t d = d_raw;
-    if (p->d_filter_fn != NULL) {
-        d = p->d_filter_fn(d_raw, p->dt, p->d_filter_ctx);
+    elib_pid_val_t delta_d = (elib_pid_val_t)0;
+    if (p->kd != (elib_pid_val_t)0) {
+        elib_pid_val_t d_raw = (error - (elib_pid_val_t)2 * ctx->prev_error + ctx->prev2_error) / p->dt;
+        elib_pid_val_t d = d_raw;
+        if (p->d_filter_fn != NULL) {
+            d = p->d_filter_fn(d_raw, p->dt, p->d_filter_ctx);
+        }
+        delta_d = p->kd * d;
     }
-    elib_pid_val_t delta_d = p->kd * d;
 
     /* Incremental output */
     elib_pid_val_t delta_u = delta_p + delta_i + delta_d;

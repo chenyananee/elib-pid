@@ -112,11 +112,14 @@ elib_pid_pos_err_t elib_pid_pos_compute(elib_pid_pos_ctx_t *ctx,
                                              ctx->integral_max);
     }
 
-    /* Derivative */
-    elib_pid_val_t d_raw = (error - ctx->prev_error) / p->dt;
-    elib_pid_val_t d = d_raw;
-    if (p->d_filter_fn != NULL) {
-        d = p->d_filter_fn(d_raw, p->dt, p->d_filter_ctx);
+    /* Derivative (skip entirely when kd == 0) */
+    elib_pid_val_t d = (elib_pid_val_t)0;
+    if (p->kd != (elib_pid_val_t)0) {
+        elib_pid_val_t d_raw = (error - ctx->prev_error) / p->dt;
+        d = d_raw;
+        if (p->d_filter_fn != NULL) {
+            d = p->d_filter_fn(d_raw, p->dt, p->d_filter_ctx);
+        }
     }
 
     /* PID output */
