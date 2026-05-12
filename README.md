@@ -90,6 +90,8 @@ elib_pid_pos_set_params(&ctx, &new_params);
 
 ### 6. 增量式 PID 控制电机转速
 
+目标：调整到目标转速正负 10 以内
+
 ```c
 /* 参数：PWM 0-4000，100ms 控制周期 */
 elib_pid_params_t params = {
@@ -126,6 +128,11 @@ while (1) {
     set_pwm((uint16_t)pwm);
     speed = read_encoder_speed();  /* 读取编码器反馈 */
     delay_ms(100);
+
+    /* 判断是否收敛到目标 ±10 以内 */
+    if (fabsf(setpoint - speed) <= 10.0f) {
+        break;  /* 达到目标 */
+    }
 }
 ```
 
