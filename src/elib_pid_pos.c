@@ -90,26 +90,23 @@ elib_pid_pos_err_t elib_pid_pos_compute(elib_pid_pos_ctx_t *ctx,
     /* Dead zone */
     error = elib_pid_util_dead_zone(error, p->dead_zone);
 
-    /* Save integral before modification for conditional anti-windup */
+    /* Integral (skip entirely when ki == 0) */
     elib_pid_val_t integral_prev = ctx->integral;
-
-    /* Integral with separation check */
-    int integrate = 1;
-    if (ctx->integral_sep_threshold > (elib_pid_val_t)0) {
-        if (error > ctx->integral_sep_threshold || error < -ctx->integral_sep_threshold) {
-            integrate = 0;
+    if (p->ki != (elib_pid_val_t)0) {
+        int integrate = 1;
+        if (ctx->integral_sep_threshold > (elib_pid_val_t)0) {
+            if (error > ctx->integral_sep_threshold || error < -ctx->integral_sep_threshold) {
+                integrate = 0;
+            }
         }
-    }
-
-    if (integrate) {
-        ctx->integral += error * p->dt;
-    }
-
-    /* Anti-windup: clamping */
-    if (ctx->anti_windup_mode & ELIB_PID_POS_ANTI_WINDUP_CLAMP) {
-        ctx->integral = elib_pid_util_clamp(ctx->integral,
-                                             ctx->integral_min,
-                                             ctx->integral_max);
+        if (integrate) {
+            ctx->integral += error * p->dt;
+        }
+        if (ctx->anti_windup_mode & ELIB_PID_POS_ANTI_WINDUP_CLAMP) {
+            ctx->integral = elib_pid_util_clamp(ctx->integral,
+                                                 ctx->integral_min,
+                                                 ctx->integral_max);
+        }
     }
 
     /* Derivative (skip entirely when kd == 0) */

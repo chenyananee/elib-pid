@@ -79,7 +79,7 @@ elib_pid_inc_err_t elib_pid_inc_compute(elib_pid_inc_ctx_t *ctx,
 
     /* Incremental terms */
     elib_pid_val_t delta_p = p->kp * (error - ctx->prev_error);
-    elib_pid_val_t delta_i = p->ki * error * p->dt;
+    elib_pid_val_t delta_i = (p->ki != (elib_pid_val_t)0) ? p->ki * error * p->dt : (elib_pid_val_t)0;
 
     elib_pid_val_t delta_d = (elib_pid_val_t)0;
     if (p->kd != (elib_pid_val_t)0) {
