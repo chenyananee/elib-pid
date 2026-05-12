@@ -1,0 +1,110 @@
+# elib-pid
+
+嵌入式 PID 算法控制库，支持增量式和位置式两种模式。
+
+## Features
+
+- **位置式 PID** - 支持积分分离、抗积分饱和（积分限幅 + 条件积分）
+- **增量式 PID** - 天然抗积分饱和
+- **不完全微分** - 用户可注册微分滤波回调函数
+- **死区配置** - 两种模式均支持对称死区
+- **输出限幅** - 两种模式均支持输出上下限钳制
+- **模式解耦** - 增量式和位置式独立文件，按需编译
+- **零动态内存** - 所有资源由用户静态分配
+- **类型可配置** - 默认 float，可宏覆盖为定点数或其他类型
+
+## Quick Start
+
+### 1. 定义 PID 参数
+
+```c
+#include "elib_pid.h"
+
+elib_pid_params_t params = {
+    .kp = 2.0f,
+    .ki = 0.5f,
+    .kd = 0.1f,
+    .dt = 0.01f,           /* 10ms 控制周期 */
+    .dead_zone = 0.5f,
+    .out_min = -100.0f,
+    .out_max = 100.0f,
+    .d_filter_fn = NULL,    /* 不使用微分滤波 */
+    .d_filter_ctx = NULL,
+};
+```
+
+### 2. 使用位置式 PID
+
+```c
+elib_pid_pos_ctx_t ctx;
+elib_pid_pos_init(&ctx, &params,
+                  -50.0f, 50.0f,    /* 积分限幅 */
+                  10.0f,            /* 积分分离阈值 */
+                  ELIB_PID_POS_ANTI_WINDUP_CLAMP | ELIB_PID_POS_ANTI_WINDUP_CONDITION);
+
+/* 控制循环 */
+elib_pid_val_t output;
+elib_pid_pos_compute(&ctx, setpoint, measurement, &output);
+```
+
+### 3. 使用增量式 PID
+
+```c
+elib_pid_inc_ctx_t ctx;
+elib_pid_inc_init(&ctx, &params);
+
+/* 控制循环 */
+elib_pid_val_t output;
+elib_pid_inc_compute(&ctx, setpoint, measurement, &output);
+```
+
+### 4. 使用微分滤波
+
+```c
+elib_pid_val_t my_d_filter(elib_pid_val_t raw_d, elib_pid_val_t dt, void *user_ctx) {
+    /* 一阶低通滤波 */
+    float alpha = 0.1f;
+    float *prev = (float *)user_ctx;
+    *prev = alpha * raw_d + (1.0f - alpha) * (*prev);
+    return *prev;
+}
+
+float filter_state = 0.0f;
+params.d_filter_fn = my_d_filter;
+params.d_filter_ctx = &filter_state;
+```
+
+## API Reference
+
+### 位置式 PID (`elib_pid_pos.h`)
+
+- `elib_pid_pos_init(ctx, params, integral_min, integral_max, sep_threshold, anti_windup_mode)` - 初始化
+- `elib_pid_pos_deinit(ctx)` - 反初始化
+- `elib_pid_pos_reset(ctx)` - 重置内部状态
+- `elib_pid_pos_compute(ctx, setpoint, measurement, &output)` - 计算一步输出
+
+### 增量式 PID (`elib_pid_inc.h`)
+
+- `elib_pid_inc_init(ctx, params)` - 初始化
+- `elib_pid_inc_deinit(ctx)` - 反初始化
+- `elib_pid_inc_reset(ctx)` - 重置内部状态
+- `elib_pid_inc_compute(ctx, setpoint, measurement, &output)` - 计算一步输出
+
+## Build
+
+无构建系统，将 `include/` 和 `src/` 加入你的项目：
+
+```bash
+# 只用位置式
+gcc app.c src/elib_pid_pos.c src/elib_pid_util.c -Iinclude -lm
+
+# 只用增量式
+gcc app.c src/elib_pid_inc.c src/elib_pid_util.c -Iinclude -lm
+
+# 两者都用
+gcc app.c src/elib_pid_pos.c src/elib_pid_inc.c src/elib_pid_util.c -Iinclude -lm
+```
+
+## License
+
+MIT License
