@@ -88,6 +88,47 @@ new_params.kd = fuzzy_kd;
 elib_pid_pos_set_params(&ctx, &new_params);
 ```
 
+### 6. 增量式 PID 控制电机转速
+
+```c
+/* 参数：PWM 0-4000，100ms 控制周期 */
+elib_pid_params_t params = {
+    .kp = 2.0f,
+    .ki = 0.01f,
+    .kd = 0.5f,
+    .dt = 0.1f,
+    .dead_zone = 0.0f,
+    .out_min = 0.0f,
+    .out_max = 4000.0f,
+    .d_filter_fn = NULL,
+    .d_filter_ctx = NULL,
+};
+
+elib_pid_inc_ctx_t ctx;
+elib_pid_inc_init(&ctx, &params);
+
+/* 控制循环（100ms 周期） */
+elib_pid_val_t speed = 0.0f;    /* 当前转速反馈 */
+elib_pid_val_t pwm = 0.0f;      /* 当前 PWM 输出 */
+elib_pid_val_t setpoint = 2000.0f;
+elib_pid_val_t max_step = 500.0f;  /* 每周期最大步长 */
+
+while (1) {
+    elib_pid_val_t pid_out;
+    elib_pid_inc_compute(&ctx, setpoint, speed, &pid_out);
+
+    /* 限幅保护（增量式已限幅，此处用于额外步长限制） */
+    elib_pid_val_t delta = pid_out - pwm;
+    if (delta > max_step) delta = max_step;
+    if (delta < -max_step) delta = -max_step;
+    pwm += delta;
+
+    set_pwm((uint16_t)pwm);
+    speed = read_encoder_speed();  /* 读取编码器反馈 */
+    delay_ms(100);
+}
+```
+
 ## API Reference
 
 ### 位置式 PID (`elib_pid_pos.h`)
