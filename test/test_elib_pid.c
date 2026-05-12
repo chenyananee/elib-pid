@@ -538,6 +538,52 @@ static void test_inc_set_params_not_initialized(void) {
     assert(err == ELIB_PID_INC_ERR_NOT_INITIALIZED);
 }
 
+/*
+ * Motor speed control scenario:
+ * - PWM range: 0-4000 (0-100% duty cycle)
+ * - Control period: 100ms (dt = 0.1)
+ * - Max PWM step per cycle: 500 (slew rate limit)
+ * - Target: speed converges to setpoint within ±10
+ * - Motor model: first-order system, speed = speed + (pwm * 0.1 - speed * 0.05)
+ */
+static void test_inc_motor_speed_control(void) {
+    elib_pid_inc_ctx_t ctx;
+    elib_pid_params_t params = {
+        .kp = 2.0f,
+        .ki = 0.01f,
+        .kd = 0.5f,
+        .dt = 0.1f,
+        .dead_zone = 0.0f,
+        .out_min = 0.0f,
+        .out_max = 4000.0f,
+        .d_filter_fn = NULL,
+        .d_filter_ctx = NULL,
+    };
+    elib_pid_inc_init(&ctx, &params);
+
+    elib_pid_val_t setpoint = 2000.0f;
+    elib_pid_val_t speed = 0.0f;
+    elib_pid_val_t pwm = 0.0f;
+    elib_pid_val_t max_step = 500.0f;
+
+    for (int i = 0; i < 2000; i++) {
+        elib_pid_val_t pid_out;
+        elib_pid_inc_compute(&ctx, setpoint, speed, &pid_out);
+
+        /* Slew rate limit */
+        elib_pid_val_t delta = pid_out - pwm;
+        if (delta > max_step) delta = max_step;
+        if (delta < -max_step) delta = -max_step;
+        pwm += delta;
+
+        /* Motor model: first-order response */
+        speed += pwm * 0.1f - speed * 0.05f;
+    }
+
+    elib_pid_val_t error = setpoint - speed;
+    assert(fabsf(error) <= 10.0f);
+}
+
 int main(void) {
     printf("=== elib-pid tests ===\n\n");
 
@@ -596,6 +642,7 @@ int main(void) {
     RUN_TEST(test_inc_d_filter);
     RUN_TEST(test_inc_set_params);
     RUN_TEST(test_inc_set_params_not_initialized);
+    RUN_TEST(test_inc_motor_speed_control);
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;
