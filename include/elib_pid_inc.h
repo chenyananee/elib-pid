@@ -41,6 +41,15 @@ void elib_pid_inc_deinit(elib_pid_inc_ctx_t *ctx);
 elib_pid_inc_err_t elib_pid_inc_reset(elib_pid_inc_ctx_t *ctx);
 
 /**
+ * @brief Update PID parameters at runtime (e.g. for fuzzy PID tuning)
+ * @param ctx Context pointer
+ * @param params New PID parameters (copied into context)
+ * @return elib_pid_inc_err_t error code
+ */
+elib_pid_inc_err_t elib_pid_inc_set_params(elib_pid_inc_ctx_t *ctx,
+                                            const elib_pid_params_t *params);
+
+/**
  * @brief Compute one step of incremental PID
  * @param ctx Context pointer
  * @param setpoint Target value

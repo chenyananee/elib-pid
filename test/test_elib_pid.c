@@ -326,6 +326,37 @@ static void test_pos_d_filter(void) {
     assert(fabsf(output - 70.0f) < EPSILON);
 }
 
+static void test_pos_set_params(void) {
+    elib_pid_pos_ctx_t ctx;
+    elib_pid_params_t p = make_pos_params();
+    p.ki = 0.0f;
+    p.kd = 0.0f;
+    elib_pid_pos_init(&ctx, &p, -50.0f, 50.0f, 100.0f, 0);
+
+    elib_pid_val_t output;
+    elib_pid_pos_compute(&ctx, 10.0f, 5.0f, &output);
+    /* kp=2, error=5, output=10 */
+    assert(fabsf(output - 10.0f) < EPSILON);
+
+    /* Change kp at runtime */
+    elib_pid_params_t new_p = p;
+    new_p.kp = 4.0f;
+    elib_pid_pos_err_t err = elib_pid_pos_set_params(&ctx, &new_p);
+    assert(err == ELIB_PID_POS_OK);
+
+    elib_pid_pos_compute(&ctx, 10.0f, 5.0f, &output);
+    /* kp=4, error=5, output=20 */
+    assert(fabsf(output - 20.0f) < EPSILON);
+}
+
+static void test_pos_set_params_not_initialized(void) {
+    elib_pid_pos_ctx_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    elib_pid_params_t p = make_pos_params();
+    elib_pid_pos_err_t err = elib_pid_pos_set_params(&ctx, &p);
+    assert(err == ELIB_PID_POS_ERR_NOT_INITIALIZED);
+}
+
 /* === Incremental PID tests === */
 
 static elib_pid_params_t make_inc_params(void) {
@@ -478,6 +509,35 @@ static void test_inc_d_filter(void) {
     assert(fabsf(output - 70.0f) < EPSILON);
 }
 
+static void test_inc_set_params(void) {
+    elib_pid_inc_ctx_t ctx;
+    elib_pid_params_t p = make_inc_params();
+    p.kd = 0.0f;
+    elib_pid_inc_init(&ctx, &p);
+
+    elib_pid_val_t output;
+    elib_pid_inc_compute(&ctx, 10.0f, 5.0f, &output);
+    elib_pid_val_t out1 = output;
+
+    /* Change kp at runtime */
+    elib_pid_params_t new_p = p;
+    new_p.kp = 4.0f;
+    elib_pid_inc_err_t err = elib_pid_inc_set_params(&ctx, &new_p);
+    assert(err == ELIB_PID_INC_OK);
+
+    elib_pid_inc_compute(&ctx, 10.0f, 5.0f, &output);
+    /* output should differ from first call due to new kp */
+    assert(output != out1);
+}
+
+static void test_inc_set_params_not_initialized(void) {
+    elib_pid_inc_ctx_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    elib_pid_params_t p = make_inc_params();
+    elib_pid_inc_err_t err = elib_pid_inc_set_params(&ctx, &p);
+    assert(err == ELIB_PID_INC_ERR_NOT_INITIALIZED);
+}
+
 int main(void) {
     printf("=== elib-pid tests ===\n\n");
 
@@ -517,6 +577,8 @@ int main(void) {
     RUN_TEST(test_pos_reset);
     RUN_TEST(test_pos_deinit);
     RUN_TEST(test_pos_d_filter);
+    RUN_TEST(test_pos_set_params);
+    RUN_TEST(test_pos_set_params_not_initialized);
 
     /* Incremental PID tests */
     printf("\n--- Incremental PID ---\n");
@@ -532,6 +594,8 @@ int main(void) {
     RUN_TEST(test_inc_reset);
     RUN_TEST(test_inc_deinit);
     RUN_TEST(test_inc_d_filter);
+    RUN_TEST(test_inc_set_params);
+    RUN_TEST(test_inc_set_params_not_initialized);
 
     printf("\n%d/%d tests passed\n", tests_passed, tests_run);
     return (tests_passed == tests_run) ? 0 : 1;

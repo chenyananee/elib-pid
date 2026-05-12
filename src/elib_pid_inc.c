@@ -19,6 +19,23 @@ elib_pid_inc_err_t elib_pid_inc_init(elib_pid_inc_ctx_t *ctx,
     return ELIB_PID_INC_OK;
 }
 
+elib_pid_inc_err_t elib_pid_inc_set_params(elib_pid_inc_ctx_t *ctx,
+                                            const elib_pid_params_t *params) {
+    if (ctx == NULL || params == NULL) {
+        return ELIB_PID_INC_ERR_INVALID_PARAM;
+    }
+    if (!ctx->initialized) {
+        return ELIB_PID_INC_ERR_NOT_INITIALIZED;
+    }
+    if (!elib_pid_util_params_valid(params)) {
+        return ELIB_PID_INC_ERR_INVALID_PARAM;
+    }
+
+    memcpy(&ctx->params, params, sizeof(elib_pid_params_t));
+
+    return ELIB_PID_INC_OK;
+}
+
 void elib_pid_inc_deinit(elib_pid_inc_ctx_t *ctx) {
     if (ctx == NULL) {
         return;

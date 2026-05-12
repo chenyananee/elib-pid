@@ -10,6 +10,7 @@
 - **死区配置** - 两种模式均支持对称死区
 - **输出限幅** - 两种模式均支持输出上下限钳制
 - **模式解耦** - 增量式和位置式独立文件，按需编译
+- **运行时参数更新** - 支持运行中动态修改 Kp/Ki/Kd 等参数，配合模糊算法
 - **零动态内存** - 所有资源由用户静态分配
 - **类型可配置** - 默认 float，可宏覆盖为定点数或其他类型
 
@@ -74,6 +75,19 @@ params.d_filter_fn = my_d_filter;
 params.d_filter_ctx = &filter_state;
 ```
 
+### 5. 运行时更新参数（模糊 PID）
+
+```c
+/* 模糊算法计算出新的 Kp/Ki/Kd */
+elib_pid_params_t new_params = params;
+new_params.kp = fuzzy_kp;
+new_params.ki = fuzzy_ki;
+new_params.kd = fuzzy_kd;
+
+/* 运行中更新，不影响积分和误差历史 */
+elib_pid_pos_set_params(&ctx, &new_params);
+```
+
 ## API Reference
 
 ### 位置式 PID (`elib_pid_pos.h`)
@@ -81,6 +95,7 @@ params.d_filter_ctx = &filter_state;
 - `elib_pid_pos_init(ctx, params, integral_min, integral_max, sep_threshold, anti_windup_mode)` - 初始化
 - `elib_pid_pos_deinit(ctx)` - 反初始化
 - `elib_pid_pos_reset(ctx)` - 重置内部状态
+- `elib_pid_pos_set_params(ctx, params)` - 运行时更新参数
 - `elib_pid_pos_compute(ctx, setpoint, measurement, &output)` - 计算一步输出
 
 ### 增量式 PID (`elib_pid_inc.h`)
@@ -88,6 +103,7 @@ params.d_filter_ctx = &filter_state;
 - `elib_pid_inc_init(ctx, params)` - 初始化
 - `elib_pid_inc_deinit(ctx)` - 反初始化
 - `elib_pid_inc_reset(ctx)` - 重置内部状态
+- `elib_pid_inc_set_params(ctx, params)` - 运行时更新参数
 - `elib_pid_inc_compute(ctx, setpoint, measurement, &output)` - 计算一步输出
 
 ## Build
