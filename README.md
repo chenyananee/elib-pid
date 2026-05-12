@@ -90,16 +90,16 @@ elib_pid_pos_set_params(&ctx, &new_params);
 
 ### 6. 增量式 PID 控制电机转速
 
-目标：调整到目标转速正负 10 以内
+目标：调整到目标转速正负 10 以内，通过死区实现——误差在 ±10 内自动停止调整
 
 ```c
-/* 参数：PWM 0-4000，100ms 控制周期 */
+/* 参数：PWM 0-4000，100ms 控制周期，死区 ±10 */
 elib_pid_params_t params = {
     .kp = 2.0f,
     .ki = 0.01f,
     .kd = 0.5f,
     .dt = 0.1f,
-    .dead_zone = 0.0f,
+    .dead_zone = 10.0f,     /* |误差| <= 10 时不调整，避免频繁抖动 */
     .out_min = 0.0f,
     .out_max = 4000.0f,
     .d_filter_fn = NULL,
@@ -119,7 +119,7 @@ while (1) {
     elib_pid_val_t pid_out;
     elib_pid_inc_compute(&ctx, setpoint, speed, &pid_out);
 
-    /* 限幅保护（增量式已限幅，此处用于额外步长限制） */
+    /* 步长限制 */
     elib_pid_val_t delta = pid_out - pwm;
     if (delta > max_step) delta = max_step;
     if (delta < -max_step) delta = -max_step;
@@ -128,11 +128,7 @@ while (1) {
     set_pwm((uint16_t)pwm);
     speed = read_encoder_speed();  /* 读取编码器反馈 */
     delay_ms(100);
-
-    /* 判断是否收敛到目标 ±10 以内 */
-    if (fabsf(setpoint - speed) <= 10.0f) {
-        break;  /* 达到目标 */
-    }
+    /* 误差在 ±10 以内时，死区使 PID 输出不变，电机自然稳定 */
 }
 ```
 
