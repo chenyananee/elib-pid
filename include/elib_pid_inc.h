@@ -15,7 +15,9 @@ typedef struct {
     elib_pid_val_t prev_error;    /* e(k-1) */
     elib_pid_val_t prev2_error;   /* e(k-2) */
     elib_pid_val_t prev_output;   /* u(k-1) */
-    int            initialized;
+    struct {
+        uint8_t initialized : 1;
+    } bit_flags;
 } elib_pid_inc_ctx_t;
 
 /**

@@ -23,8 +23,10 @@ typedef struct {
     elib_pid_val_t integral_min;            /* Integral clamp lower limit */
     elib_pid_val_t integral_max;            /* Integral clamp upper limit */
     elib_pid_val_t integral_sep_threshold;  /* Integral separation threshold */
-    uint32_t       anti_windup_mode;        /* Anti-windup mode bitmask */
-    int            initialized;
+    struct {
+        uint8_t anti_windup_mode : 2;     /* Anti-windup mode bitmask */
+        uint8_t initialized : 1;
+    } bit_flags;
 } elib_pid_pos_ctx_t;
 
 /**
@@ -42,7 +44,7 @@ elib_pid_pos_err_t elib_pid_pos_init(elib_pid_pos_ctx_t *ctx,
                                       elib_pid_val_t integral_min,
                                       elib_pid_val_t integral_max,
                                       elib_pid_val_t integral_sep_threshold,
-                                      uint32_t anti_windup_mode);
+                                      uint16_t anti_windup_mode);
 
 /**
  * @brief Deinitialize position PID controller

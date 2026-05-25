@@ -14,7 +14,7 @@ elib_pid_inc_err_t elib_pid_inc_init(elib_pid_inc_ctx_t *ctx,
 
     memset(ctx, 0, sizeof(elib_pid_inc_ctx_t));
     memcpy(&ctx->params, params, sizeof(elib_pid_params_t));
-    ctx->initialized = 1;
+    ctx->bit_flags.initialized = 1;
 
     return ELIB_PID_INC_OK;
 }
@@ -24,7 +24,7 @@ elib_pid_inc_err_t elib_pid_inc_set_params(elib_pid_inc_ctx_t *ctx,
     if (ctx == NULL || params == NULL) {
         return ELIB_PID_INC_ERR_INVALID_PARAM;
     }
-    if (!ctx->initialized) {
+    if (!ctx->bit_flags.initialized) {
         return ELIB_PID_INC_ERR_NOT_INITIALIZED;
     }
     if (!elib_pid_util_params_valid(params)) {
@@ -40,14 +40,14 @@ void elib_pid_inc_deinit(elib_pid_inc_ctx_t *ctx) {
     if (ctx == NULL) {
         return;
     }
-    ctx->initialized = 0;
+    ctx->bit_flags.initialized = 0;
 }
 
 elib_pid_inc_err_t elib_pid_inc_reset(elib_pid_inc_ctx_t *ctx) {
     if (ctx == NULL) {
         return ELIB_PID_INC_ERR_INVALID_PARAM;
     }
-    if (!ctx->initialized) {
+    if (!ctx->bit_flags.initialized) {
         return ELIB_PID_INC_ERR_NOT_INITIALIZED;
     }
 
@@ -65,7 +65,7 @@ elib_pid_inc_err_t elib_pid_inc_compute(elib_pid_inc_ctx_t *ctx,
     if (ctx == NULL || output == NULL) {
         return ELIB_PID_INC_ERR_INVALID_PARAM;
     }
-    if (!ctx->initialized) {
+    if (!ctx->bit_flags.initialized) {
         return ELIB_PID_INC_ERR_NOT_INITIALIZED;
     }
 

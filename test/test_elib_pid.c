@@ -142,7 +142,7 @@ static void test_pos_init_valid(void) {
     elib_pid_pos_err_t err = elib_pid_pos_init(&ctx, &p, -50.0f, 50.0f, 10.0f,
                                                 ELIB_PID_POS_ANTI_WINDUP_CLAMP);
     assert(err == ELIB_PID_POS_OK);
-    assert(ctx.initialized == 1);
+    assert(ctx.bit_flags.initialized == 1);
 }
 
 static void test_pos_init_null_ctx(void) {
@@ -302,7 +302,7 @@ static void test_pos_deinit(void) {
     elib_pid_pos_init(&ctx, &p, -50.0f, 50.0f, 10.0f, 0);
 
     elib_pid_pos_deinit(&ctx);
-    assert(ctx.initialized == 0);
+    assert(ctx.bit_flags.initialized == 0);
 
     elib_pid_val_t output;
     elib_pid_pos_err_t err = elib_pid_pos_compute(&ctx, 10.0f, 5.0f, &output);
@@ -374,7 +374,7 @@ static void test_inc_init_valid(void) {
     elib_pid_params_t p = make_inc_params();
     elib_pid_inc_err_t err = elib_pid_inc_init(&ctx, &p);
     assert(err == ELIB_PID_INC_OK);
-    assert(ctx.initialized == 1);
+    assert(ctx.bit_flags.initialized == 1);
 }
 
 static void test_inc_init_null_ctx(void) {
@@ -485,7 +485,7 @@ static void test_inc_deinit(void) {
     elib_pid_inc_init(&ctx, &p);
 
     elib_pid_inc_deinit(&ctx);
-    assert(ctx.initialized == 0);
+    assert(ctx.bit_flags.initialized == 0);
 
     elib_pid_val_t output;
     elib_pid_inc_err_t err = elib_pid_inc_compute(&ctx, 10.0f, 5.0f, &output);
