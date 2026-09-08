@@ -57,6 +57,20 @@ void elib_pid_pos_deinit(elib_pid_pos_ctx_t *ctx) {
     ctx->bit_flags.initialized = 0;
 }
 
+elib_pid_pos_err_t elib_pid_pos_reset(elib_pid_pos_ctx_t *ctx) {
+    if (ctx == NULL) {
+        return ELIB_PID_POS_ERR_INVALID_PARAM;
+    }
+    if (!ctx->bit_flags.initialized) {
+        return ELIB_PID_POS_ERR_NOT_INITIALIZED;
+    }
+
+    ctx->integral = (elib_pid_val_t)0;
+    ctx->prev_error = (elib_pid_val_t)0;
+
+    return ELIB_PID_POS_OK;
+}
+
 elib_pid_pos_err_t elib_pid_pos_compute(elib_pid_pos_ctx_t *ctx,
                                          elib_pid_val_t setpoint,
                                          elib_pid_val_t measurement,

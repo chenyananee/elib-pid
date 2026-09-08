@@ -11,6 +11,9 @@ elib_pid_inc_err_t elib_pid_inc_init(elib_pid_inc_ctx_t *ctx,
     if (!elib_pid_util_params_valid(params)) {
         return ELIB_PID_INC_ERR_INVALID_PARAM;
     }
+    if (params->delta_min > params->delta_max) {
+        return ELIB_PID_INC_ERR_INVALID_PARAM;
+    }
 
     memset(ctx, 0, sizeof(elib_pid_inc_ctx_t));
     memcpy(&ctx->params, params, sizeof(elib_pid_params_t));
@@ -93,6 +96,9 @@ elib_pid_inc_err_t elib_pid_inc_compute(elib_pid_inc_ctx_t *ctx,
         }
         delta_u += p->kd * d;
     }
+
+    /* Clamp increment to [delta_min, delta_max] */
+    delta_u = elib_pid_util_clamp(delta_u, p->delta_min, p->delta_max);
 
     elib_pid_val_t out = ctx->prev_output + delta_u;
 

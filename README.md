@@ -5,7 +5,7 @@
 ## Features
 
 - **位置式 PID** - 支持积分分离、抗积分饱和（积分限幅 + 条件积分）
-- **增量式 PID** - 天然抗积分饱和
+- **增量式 PID** - 天然抗积分饱和，支持增量限幅
 - **不完全微分** - 用户可注册微分滤波回调函数
 - **死区配置** - 两种模式均支持对称死区
 - **输出限幅** - 两种模式均支持输出上下限钳制
@@ -29,6 +29,8 @@ elib_pid_params_t params = {
     .dead_zone = 0.5f,
     .out_min = -100.0f,
     .out_max = 100.0f,
+    .delta_min = -50.0f,   /* 增量式: 每周期最大负向变化量 */
+    .delta_max = 50.0f,    /* 增量式: 每周期最大正向变化量 */
     .d_filter_fn = NULL,    /* 不使用微分滤波 */
     .d_filter_ctx = NULL,
 };
@@ -93,7 +95,7 @@ elib_pid_pos_set_params(&ctx, &new_params);
 目标：调整到目标转速正负 10 以内，通过死区实现——误差在 ±10 内自动停止调整
 
 ```c
-/* 参数：PWM 0-4000，100ms 控制周期，死区 ±10 */
+/* 参数：PWM 0-4000，100ms 控制周期，死区 ±10，每周期最大步长 ±500 */
 elib_pid_params_t params = {
     .kp = 2.0f,
     .ki = 0.01f,
@@ -102,6 +104,8 @@ elib_pid_params_t params = {
     .dead_zone = 10.0f,     /* |误差| <= 10 时不调整，避免频繁抖动 */
     .out_min = 0.0f,
     .out_max = 4000.0f,
+    .delta_min = -500.0f,   /* 每周期最大负向变化量 */
+    .delta_max = 500.0f,    /* 每周期最大正向变化量 */
     .d_filter_fn = NULL,
     .d_filter_ctx = NULL,
 };
@@ -111,21 +115,13 @@ elib_pid_inc_init(&ctx, &params);
 
 /* 控制循环（100ms 周期） */
 elib_pid_val_t speed = 0.0f;    /* 当前转速反馈 */
-elib_pid_val_t pwm = 0.0f;      /* 当前 PWM 输出 */
 elib_pid_val_t setpoint = 2000.0f;
-elib_pid_val_t max_step = 500.0f;  /* 每周期最大步长 */
 
 while (1) {
     elib_pid_val_t pid_out;
     elib_pid_inc_compute(&ctx, setpoint, speed, &pid_out);
 
-    /* 步长限制 */
-    elib_pid_val_t delta = pid_out - pwm;
-    if (delta > max_step) delta = max_step;
-    if (delta < -max_step) delta = -max_step;
-    pwm += delta;
-
-    set_pwm((uint16_t)pwm);
+    set_pwm((uint16_t)pid_out);
     speed = read_encoder_speed();  /* 读取编码器反馈 */
     delay_ms(100);
     /* 误差在 ±10 以内时，死区使 PID 输出不变，电机自然稳定 */
@@ -133,6 +129,24 @@ while (1) {
 ```
 
 ## API Reference
+
+### 共享参数 (`elib_pid_defs.h`)
+
+```c
+typedef struct {
+    elib_pid_val_t kp;              /* 比例增益 */
+    elib_pid_val_t ki;              /* 积分增益 */
+    elib_pid_val_t kd;              /* 微分增益 */
+    elib_pid_val_t dt;              /* 控制周期，必须 > 0 */
+    elib_pid_val_t dead_zone;       /* 死区宽度（>= 0，对称） */
+    elib_pid_val_t out_min;         /* 输出下限 */
+    elib_pid_val_t out_max;         /* 输出上限，必须 > out_min */
+    elib_pid_val_t delta_min;       /* 增量式: 负增量限制（<= 0） */
+    elib_pid_val_t delta_max;       /* 增量式: 正增量限制（>= 0） */
+    elib_pid_d_filter_fn d_filter_fn;   /* 微分滤波回调，NULL 不滤波 */
+    void *d_filter_ctx;                 /* 微分滤波用户上下文 */
+} elib_pid_params_t;
+```
 
 ### 位置式 PID (`elib_pid_pos.h`)
 

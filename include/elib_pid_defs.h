@@ -39,6 +39,8 @@ typedef struct {
     elib_pid_val_t dead_zone;           /* Dead zone width (>= 0, symmetric) */
     elib_pid_val_t out_min;             /* Output lower limit */
     elib_pid_val_t out_max;             /* Output upper limit, must be > out_min */
+    elib_pid_val_t delta_min;           /* Incremental PID: negative increment limit (<= 0) */
+    elib_pid_val_t delta_max;           /* Incremental PID: positive increment limit (>= 0) */
     elib_pid_d_filter_fn d_filter_fn;   /* Derivative filter callback, NULL = no filter */
     void *d_filter_ctx;                 /* Derivative filter user context */
 } elib_pid_params_t;
