@@ -2,6 +2,7 @@
 #ifndef ELIB_PID_DEFS_H
 #define ELIB_PID_DEFS_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
