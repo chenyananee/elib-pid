@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 # elib-pid
 
 嵌入式 PID 控制库：位置式 + 增量式双模式。C99、零动态内存、无全局状态、
